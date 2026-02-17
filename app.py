@@ -1,53 +1,161 @@
-from flask import Flask, request
-import mysql.connector
+import streamlit as st
+import requests
+import socket
+import streamlit.components.v1 as components
+from datetime import datetime
+from urllib.parse import urlparse
 
-app = Flask(__name__)
+# --- CONFIGURARE ---
+st.set_page_config(page_title="CyberSec Disertație", page_icon="🛡️", layout="wide")
 
-# CONFIGURARE BAZA DE DATE
-# (Aceleași setări ca la Java/DBngin)
-db_config = {
-    'user': 'root',
-    'password': '',        # DBngin de obicei nu are parolă pe root
-    'host': '127.0.0.1',
-    'database': 'disertatie_db',
-    'port': 3306
-}
+# CSS Custom
+st.markdown("""
+    <style>
+    .main-header {font-size: 24px; font-weight: bold; color: #4CAF50;}
+    .vuln-box {border: 1px solid #ff4b4b; padding: 15px; border-radius: 5px; margin-bottom: 10px;}
+    </style>
+    """, unsafe_allow_html=True)
 
-@app.route('/api/login-vulnerabil', methods=['GET'])
-def login():
-    # 1. Luăm datele din URL (echivalentul @RequestParam din Java)
-    user_input = request.args.get('user')
-    pass_input = request.args.get('pass')
+# --- MENIU DE NAVIGARE ---
+menu = ["1. Scanner Vulnerabilități", "2. Laborator Atacuri (Simulare)", "3. Teorie & Documentație"]
+choice = st.sidebar.selectbox("Navigare Proiect", menu)
 
-    try:
-        # 2. Ne conectăm la baza de date
-        conn = mysql.connector.connect(**db_config)
-        cursor = conn.cursor(dictionary=True)
+# ==========================================
+# PAGINA 1: SCANNER (Ce aveam deja)
+# ==========================================
+if choice == "1. Scanner Vulnerabilități":
+    st.title("🕵️ Scanner de Vulnerabilități Web")
+    st.markdown("Instrument automatizat pentru identificarea problemelor de securitate.")
 
-        # 3. VULNERABILITATEA MAJORA (SQL Injection)
-        # Folosim "f-string" pentru a lipi textul direct in comanda.
-        # NU facem nicio verificare!
-        sql_query = f"SELECT * FROM users WHERE username = '{user_input}' AND password = '{pass_input}'"
+    url = st.text_input("URL Țintă:", "https://google.com")
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        scan_ports_opt = st.checkbox("Scanare Porturi (Active)", value=True)
+    with col2:
+        # Checkbox simplu, logică viitoare
+        st.write("Opțiuni Avansate:")
+        st.info("Analiza HTTPS este activă implicit.")
+
+    if st.button("🚀 PORNEȘTE SCANAREA", type="primary"):
+        st.write("---")
         
-        print(f"Execut comanda SQL: {sql_query}") # Vedem in consola ce se intampla
+        # 1. HTTPS CHECK
+        try:
+            response = requests.get(url, timeout=3)
+            if url.startswith("https"):
+                st.success("✅ Conexiune Securizată (HTTPS)")
+            else:
+                st.error("❌ Conexiune Nesecurizată (HTTP) - Risc de 'Man-in-the-Middle'")
+                
+            # 2. HEADERS CHECK
+            st.subheader("🛡️ Analiză Headere")
+            headers = ["X-Frame-Options", "Content-Security-Policy", "Strict-Transport-Security"]
+            for h in headers:
+                if h in response.headers:
+                    st.success(f"✅ {h}: Prezent")
+                else:
+                    st.warning(f"⚠️ {h}: Lipsește")
 
-        # 4. Executăm comanda
-        cursor.execute(sql_query)
-        account = cursor.fetchone()
+        except:
+            st.error("Nu s-a putut conecta la site.")
 
-        # Închidem conexiunea
-        cursor.close()
-        conn.close()
+        # 3. PORT SCANNER SIMPLU
+        if scan_ports_opt:
+            st.subheader("🌐 Scanare Porturi")
+            # Curățăm URL-ul pentru a obține doar domeniul (fără https://)
+            domain = url.replace("https://", "").replace("http://", "").split("/")[0]
+            ports = {80: "HTTP", 443: "HTTPS", 21: "FTP", 22: "SSH"}
+            
+            for port, name in ports.items():
+                sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                sock.settimeout(0.5)
+                result = sock.connect_ex((domain, port))
+                if result == 0:
+                    st.error(f"🔴 Port {port} ({name}) este DESCHIS")
+                else:
+                    st.success(f"🟢 Port {port} ({name}) este închis")
+                sock.close()
 
-        # 5. Verificăm dacă am găsit utilizatorul
-        if account:
-            return f"LOGIN REUSIT! Ai intrat ca: {account['username']}"
-        else:
-            return "Login esuat!"
+# ==========================================
+# PAGINA 2: LABORATOR ATACURI (NOU!)
+# ==========================================
+elif choice == "2. Laborator Atacuri (Simulare)":
+    st.title("🧪 Laborator de Simulare Atacuri")
+    st.info("Această secțiune demonstrează practic vulnerabilitățile menționate în disertație.")
 
-    except Exception as e:
-        return f"Eroare server: {e}"
+    tab1, tab2, tab3 = st.tabs(["SQL Injection", "XSS (Cross-Site Scripting)", "Command Injection"])
 
-if __name__ == '__main__':
-    # Pornim serverul pe portul 5000
-    app.run(debug=True, port=5000)
+    # --- SCENARIU 1: SQL INJECTION ---
+    with tab1:
+        st.header("1. SQL Injection (SQLi)")
+        st.markdown("""
+        **Descriere:** Atacatorul manipulează interogarea SQL pentru a ocoli autentificarea.
+        **Payload Clasic:** `' OR '1'='1`
+        """)
+        
+        st.markdown("### 🔐 Formular Login Vulnerabil")
+        username = st.text_input("Utilizator:", placeholder="admin")
+        password = st.text_input("Parolă:", type="password", placeholder="Încearcă: ' OR '1'='1")
+        
+        if st.button("Autentificare (Simulare)"):
+            # Simulăm o bază de date vulnerabilă
+            if password == "admin123":
+                st.success("Autentificare reușită (Normal).")
+            elif "' OR '1'='1" in password or '" OR "1"="1' in password:
+                st.error("⚠️ ATAC REUȘIT! SQL Injection detectat.")
+                st.success("🔓 Sistemul a fost păcălit! Ai primit acces de Administrator.")
+                st.code(f"SELECT * FROM users WHERE user='{username}' AND pass='{password}'", language="sql")
+                st.write("Deoarece '1'='1' este mereu adevărat, baza de date a returnat 'TRUE'.")
+            else:
+                st.error("Parolă greșită.")
+
+    # --- SCENARIU 2: XSS ---
+    with tab2:
+        st.header("2. XSS (Cross-Site Scripting)")
+        st.markdown("""
+        **Descriere:** Atacatorul injectează cod JavaScript malițios.
+        **Payload:** `<script>alert('Hacked')</script>` sau `<h1>HACKED</h1>`
+        """)
+        
+        st.markdown("### 💬 Comentarii Vulnerabile")
+        user_input = st.text_area("Scrie un comentariu:", placeholder="Scrie ceva sau pune cod HTML...")
+        
+        if st.button("Postează Comentariul"):
+            st.write("Previzualizare (Vulnerabil):")
+            components.html(user_input, height=100, scrolling=True)
+            
+            if "<script>" in user_input or "<h" in user_input:
+                st.error("⚠️ XSS POSIBIL! Codul HTML/JS a fost executat.")
+
+    # --- SCENARIU 3: COMMAND INJECTION ---
+    with tab3:
+        st.header("3. Command Execution (RCE)")
+        st.markdown("""
+        **Descriere:** Atacatorul execută comenzi de sistem.
+        **Payload:** `127.0.0.1; ls`
+        """)
+        
+        target_ip = st.text_input("Ping IP:", "8.8.8.8")
+        
+        if st.button("Execută Ping"):
+            if ";" in target_ip or "&&" in target_ip:
+                st.error("⚠️ Command Injection Detectat!")
+                st.code(f"ping -c 1 {target_ip}", language="bash")
+                st.write("Sistemul ar fi executat comanda de după ';'.")
+            else:
+                st.info(f"Pinging {target_ip}...")
+                st.success("Ping reușit (Safe).")
+
+# ==========================================
+# PAGINA 3: DOCUMENTAȚIE
+# ==========================================
+elif choice == "3. Teorie & Documentație":
+    st.title("📚 Documentație Tehnică")
+    st.markdown("### Componentele Aplicației Web")
+    st.write("- **Frontend:** Streamlit")
+    st.write("- **Backend:** Python")
+    st.write("- **Rețea:** Socket & Requests")
+    
+    st.markdown("### Măsuri de Securizare")
+    st.info("1. Input Validation\n2. Prepared Statements\n3. WAF (Web Application Firewall)")
