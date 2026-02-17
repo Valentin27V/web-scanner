@@ -15,6 +15,7 @@ st.set_page_config(
 # --- 2. DESIGN PERSONALIZAT (CSS) ---
 st.markdown("""
     <style>
+    /* Titluri */
     .main-title {
         text-align: center;
         font-family: 'Courier New', Courier, monospace;
@@ -24,12 +25,21 @@ st.markdown("""
         text-shadow: 0px 0px 10px #00FF41;
         margin-bottom: 20px;
     }
+    /* Carduri */
+    .css-1r6slb0 {
+        border: 1px solid #333;
+        padding: 20px;
+        border-radius: 10px;
+        background-color: #0E1117;
+    }
+    /* Footer */
     .footer {
         position: fixed; left: 0; bottom: 0; width: 100%;
         background-color: #0E1117; color: #808080;
         text-align: center; padding: 10px; font-size: 12px;
         border-top: 1px solid #333; z-index: 100;
     }
+    /* Butoane */
     .stButton>button {
         background-color: #FF4B4B; color: white;
         border-radius: 8px; height: 50px; font-weight: bold;
@@ -42,11 +52,12 @@ with st.sidebar:
     st.markdown("## 🛡️ Panou Control")
     st.write("---")
 
-    # === LOGO UTM ===
+    # === LOGO LOCAL (.WEBP) ===
+    # Aici codul caută fișierul 'logo.webp'
     try:
-        st.image("https://utm.ro/wp-content/uploads/2021/01/logo-utm-simplu.png", use_column_width=True)
+        st.image("logo.webp", use_column_width=True)
     except:
-        st.error("Logo Error")
+        st.warning("⚠️ Nu găsesc 'logo.webp'. Asigură-te că l-ai urcat pe GitHub!")
 
     # === TEXT FACULTATE ===
     st.markdown("""
@@ -59,7 +70,7 @@ with st.sidebar:
     
     st.write("---")
     
-    # MENIU
+    # MENIU DE NAVIGARE
     choice = st.radio(
         "NAVIGARE:", 
         ["1. Scanner", "2. Laborator Atacuri", "3. Documentație"],
@@ -74,6 +85,7 @@ with st.sidebar:
 # === PAGINA 1: SCANNER ===
 if "1. Scanner" in choice:
     st.markdown('<h1 class="main-title">SCANNER VULNERABILITĂȚI</h1>', unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center;'>Analizează securitatea serverelor web în timp real.</p>", unsafe_allow_html=True)
     st.write("---")
 
     col_input, col_btn = st.columns([3, 1])
@@ -96,10 +108,12 @@ if "1. Scanner" in choice:
                     st.markdown("### 🔒 Criptare")
                     if url.startswith("https"):
                         st.success("HTTPS: ACTIV")
+                        st.metric("Certificat", "Valid")
                     else:
                         st.error("HTTPS: INACTIV")
+                        st.metric("Certificat", "Lipsă")
                 
-                # C2: Server (AICI ERA PROBLEMA, ACUM E REPARATĂ)
+                # C2: Server
                 with c2:
                     st.markdown("### 🖥️ Server")
                     try:
@@ -124,7 +138,7 @@ if "1. Scanner" in choice:
                             else:
                                 st.write(f"Port {p}: Închis 🟢")
                     except:
-                        st.error("Eroare Porturi")
+                        st.error("Eroare Scanare Porturi")
                         
             except Exception as e:
                 st.error(f"Eroare generală: {e}")
@@ -132,26 +146,32 @@ if "1. Scanner" in choice:
 # === PAGINA 2: LABORATOR ===
 elif "2. Laborator" in choice:
     st.markdown('<h1 class="main-title">LABORATOR SIMULARE</h1>', unsafe_allow_html=True)
-    st.warning("⚠️ ATENȚIE: Acest mediu este creat în scop educațional.")
+    st.warning("⚠️ ATENȚIE: Acest mediu este creat în scop educațional pentru disertație.")
     
     tab1, tab2 = st.tabs(["💥 SQL INJECTION", "☠️ XSS ATTACK"])
 
     with tab1:
         st.subheader("Simulare: Spargere Bază de Date")
         st.code("Payload: ' OR '1'='1", language="sql")
+        user = st.text_input("User:", "admin")
         pwd = st.text_input("Password:", type="password")
         if st.button("Încearcă Login"):
             if "' OR '1'='1" in pwd:
                 st.error("ACCESS GRANTED! (SQL Injection Successful)")
+                st.json({"id": 1, "user": "admin", "role": "ROOT_ADMIN", "data": "CONFIDENTIAL"})
+            elif pwd == "admin":
+                st.success("Login normal reușit.")
             else:
                 st.error("Access Denied.")
 
     with tab2:
         st.subheader("Simulare: Cross-Site Scripting")
+        st.code("Payload: <h1>HACKED</h1>", language="html")
         comm = st.text_input("Comentariu:")
         if st.button("Postează"):
+            st.caption("Rezultat:")
             if "<" in comm and ">" in comm:
-                st.error("XSS Detectat!")
+                st.error("XSS Detectat! Codul a fost executat.")
                 components.html(comm, height=50)
             else:
                 st.write(comm)
@@ -159,7 +179,17 @@ elif "2. Laborator" in choice:
 # === PAGINA 3: DOCS ===
 elif "3. Documentație" in choice:
     st.markdown('<h1 class="main-title">DOCUMENTAȚIE TEHNICĂ</h1>', unsafe_allow_html=True)
-    st.markdown("### Arhitectura Client-Server\nFrontend: Streamlit | Backend: Python")
+    st.markdown("""
+    ### 1. Arhitectura
+    Această aplicație utilizează un model **Client-Server**:
+    * **Frontend:** Streamlit (Python)
+    * **Logic:** Socket & Requests Libraries
+    
+    ### 2. Fluxul de Date
+    1.  Utilizatorul introduce URL-ul.
+    2.  Serverul validează formatul.
+    3.  Se inițiază conexiuni TCP către porturile standard.
+    """)
 
 # --- FOOTER ---
 st.markdown("""
