@@ -13,12 +13,27 @@ st.markdown("""
     <style>
     .main-header {font-size: 24px; font-weight: bold; color: #4CAF50;}
     .vuln-box {border: 1px solid #ff4b4b; padding: 15px; border-radius: 5px; margin-bottom: 10px;}
+    /* Facem butoanele din meniu să arate mai bine */
+    .stRadio > label {font-weight: bold;}
     </style>
     """, unsafe_allow_html=True)
 
-# --- MENIU DE NAVIGARE ---
-menu = ["1. Scanner Vulnerabilități", "2. Laborator Atacuri (Simulare)", "3. Teorie & Documentație"]
-choice = st.sidebar.selectbox("Navigare Proiect", menu)
+# --- MENIU DE NAVIGARE (TOATE OPȚIUNILE VIZIBILE) ---
+with st.sidebar:
+    st.title("🛡️ Panou Control")
+    st.image("https://cdn-icons-png.flaticon.com/512/9662/9662366.png", width=100)
+    st.write("---")
+    st.write("📂 **Navigare Proiect:**")
+    
+    # Aici e modificarea: Folosim 'radio' în loc de 'selectbox'
+    choice = st.radio(
+        "Alege Modulul:", 
+        ["1. Scanner Vulnerabilități", "2. Laborator Atacuri (Simulare)", "3. Teorie & Documentație"],
+        index=0 # Pornește implicit pe prima opțiune
+    )
+    
+    st.write("---")
+    st.info("Status: Conectat ✅\nVersiune: 3.1 Final")
 
 # ==========================================
 # PAGINA 1: SCANNER (Ce aveam deja)
@@ -33,7 +48,6 @@ if choice == "1. Scanner Vulnerabilități":
     with col1:
         scan_ports_opt = st.checkbox("Scanare Porturi (Active)", value=True)
     with col2:
-        # Checkbox simplu, logică viitoare
         st.write("Opțiuni Avansate:")
         st.info("Analiza HTTPS este activă implicit.")
 
@@ -63,7 +77,6 @@ if choice == "1. Scanner Vulnerabilități":
         # 3. PORT SCANNER SIMPLU
         if scan_ports_opt:
             st.subheader("🌐 Scanare Porturi")
-            # Curățăm URL-ul pentru a obține doar domeniul (fără https://)
             domain = url.replace("https://", "").replace("http://", "").split("/")[0]
             ports = {80: "HTTP", 443: "HTTPS", 21: "FTP", 22: "SSH"}
             
@@ -78,7 +91,7 @@ if choice == "1. Scanner Vulnerabilități":
                 sock.close()
 
 # ==========================================
-# PAGINA 2: LABORATOR ATACURI (NOU!)
+# PAGINA 2: LABORATOR ATACURI
 # ==========================================
 elif choice == "2. Laborator Atacuri (Simulare)":
     st.title("🧪 Laborator de Simulare Atacuri")
@@ -99,7 +112,6 @@ elif choice == "2. Laborator Atacuri (Simulare)":
         password = st.text_input("Parolă:", type="password", placeholder="Încearcă: ' OR '1'='1")
         
         if st.button("Autentificare (Simulare)"):
-            # Simulăm o bază de date vulnerabilă
             if password == "admin123":
                 st.success("Autentificare reușită (Normal).")
             elif "' OR '1'='1" in password or '" OR "1"="1' in password:
@@ -124,7 +136,6 @@ elif choice == "2. Laborator Atacuri (Simulare)":
         if st.button("Postează Comentariul"):
             st.write("Previzualizare (Vulnerabil):")
             components.html(user_input, height=100, scrolling=True)
-            
             if "<script>" in user_input or "<h" in user_input:
                 st.error("⚠️ XSS POSIBIL! Codul HTML/JS a fost executat.")
 
